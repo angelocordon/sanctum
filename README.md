@@ -122,3 +122,40 @@ sanctum/
 ├── .node-version     # Node version for asdf/nodenv
 └── README.md         # This file
 ```
+
+## Deployment
+
+### Vercel Preview Deployments via GitHub Actions
+
+This project uses GitHub Actions to deploy preview environments on Vercel for pull requests. Previews are only deployed when there are code or build-configuration changes that affect the Vite build output (e.g., changes to `src/`, `package.json`, `vite.config.ts`, etc.). This avoids unnecessary deployments for docs-only changes or empty commits.
+
+#### Setting Up GitHub Actions Deployment
+
+To enable preview deployments via GitHub Actions, you need to configure the following repository secrets:
+
+1. **VERCEL_TOKEN**: Your Vercel authentication token
+   - Go to [Vercel Account Settings → Tokens](https://vercel.com/account/tokens)
+   - Create a new token with appropriate scope
+   - Add it as a repository secret named `VERCEL_TOKEN`
+
+2. **VERCEL_ORG_ID**: Your Vercel organization/team ID
+   - Run `vercel link` in your local project directory
+   - Find the org ID in `.vercel/project.json` under `orgId`
+   - Add it as a repository secret named `VERCEL_ORG_ID`
+
+3. **VERCEL_PROJECT_ID**: Your Vercel project ID
+   - Run `vercel link` in your local project directory (if not already done)
+   - Find the project ID in `.vercel/project.json` under `projectId`
+   - Add it as a repository secret named `VERCEL_PROJECT_ID`
+
+#### Disabling Vercel GitHub App Integration
+
+To prevent duplicate deployments, you should disable the Vercel GitHub App integration for this repository:
+
+1. Go to your Vercel dashboard
+2. Navigate to **Settings → Git** for the Sanctum project
+3. Under **Git Integration**, find the GitHub connection
+4. Click **Disconnect** or adjust the settings to disable automatic deployments
+5. Alternatively, you can adjust the Vercel GitHub App settings at the GitHub organization level to exclude this repository
+
+With these settings configured, every pull request with code changes will automatically receive a Vercel Preview deployment, and the deployment URL will be posted as a PR comment and visible in the GitHub deployment status.
