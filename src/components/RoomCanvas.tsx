@@ -322,9 +322,16 @@ const RoomCanvas = ({ roomWidth, roomLength }: RoomCanvasProps) => {
       const newXInFeet = (px - transform.offsetX) / transform.scale - dragOffset.x
       const newYInFeet = (py - transform.offsetY) / transform.scale - dragOffset.y
 
-      // Clamp to room boundaries
-      const maxX = roomWidth - selectedItem.width
-      const maxY = roomLength - selectedItem.depth
+      // Calculate bounding box for rotated item
+      const angle = (selectedItem.rotation * Math.PI) / 180
+      const cos = Math.abs(Math.cos(angle))
+      const sin = Math.abs(Math.sin(angle))
+      const rotatedWidth = selectedItem.width * cos + selectedItem.depth * sin
+      const rotatedHeight = selectedItem.width * sin + selectedItem.depth * cos
+
+      // Clamp to room boundaries accounting for rotation
+      const maxX = roomWidth - rotatedWidth
+      const maxY = roomLength - rotatedHeight
       const clampedX = Math.max(0, Math.min(maxX, newXInFeet))
       const clampedY = Math.max(0, Math.min(maxY, newYInFeet))
 
@@ -342,7 +349,10 @@ const RoomCanvas = ({ roomWidth, roomLength }: RoomCanvasProps) => {
       // Calculate angle from item center to mouse
       const dx = px - itemCenterX
       const dy = py - itemCenterY
-      const angle = (Math.atan2(dy, dx) * 180) / Math.PI + 90
+      let angle = (Math.atan2(dy, dx) * 180) / Math.PI + 90
+      
+      // Normalize angle to 0-360 range
+      angle = ((angle % 360) + 360) % 360
 
       setItems(
         items.map((item) =>
@@ -366,9 +376,11 @@ const RoomCanvas = ({ roomWidth, roomLength }: RoomCanvasProps) => {
 
   const handleRotationChange = (angle: number) => {
     if (selectedItemId) {
+      // Normalize angle to 0-360 range
+      const normalizedAngle = ((angle % 360) + 360) % 360
       setItems(
         items.map((item) =>
-          item.id === selectedItemId ? { ...item, rotation: angle } : item
+          item.id === selectedItemId ? { ...item, rotation: normalizedAngle } : item
         )
       )
     }
