@@ -128,8 +128,9 @@ const RoomCanvas = ({ roomWidth, roomLength }: RoomCanvasProps) => {
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
-    // Scale the context for devicePixelRatio
+    // Reset transform and scale the context for devicePixelRatio
     const dpr = window.devicePixelRatio || 1
+    ctx.setTransform(1, 0, 0, 1, 0, 0)
     ctx.scale(dpr, dpr)
 
     // Clear the canvas (use CSS pixel dimensions for clearing)
