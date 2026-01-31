@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
-import './RoomCanvas.css'
+import { Input } from './ui/input'
+import { Label } from './ui/label'
+import { Button } from './ui/button'
 
 // Canvas dimensions
 const CANVAS_WIDTH = 800
@@ -409,13 +411,13 @@ const RoomCanvas = ({ roomWidth, roomLength }: RoomCanvasProps) => {
   }
 
   return (
-    <div className="room-canvas-container">
-      <div className="item-controls">
-        <h3>Add Custom Item</h3>
-        <div className="item-form">
-          <div className="control-group">
-            <label htmlFor="item-width">Width (inches):</label>
-            <input
+    <div className="flex flex-col justify-center items-center my-8">
+      <div className="mb-8 p-6 border border-input rounded-lg bg-card w-full max-w-3xl">
+        <h3 className="mt-0 mb-4 text-2xl font-semibold">Add Custom Item</h3>
+        <div className="flex gap-4 items-end flex-wrap">
+          <div className="flex flex-col gap-2 text-left flex-1 min-w-[120px]">
+            <Label htmlFor="item-width">Width (inches):</Label>
+            <Input
               id="item-width"
               type="number"
               min="1"
@@ -425,9 +427,9 @@ const RoomCanvas = ({ roomWidth, roomLength }: RoomCanvasProps) => {
               placeholder="e.g., 36"
             />
           </div>
-          <div className="control-group">
-            <label htmlFor="item-depth">Depth (inches):</label>
-            <input
+          <div className="flex flex-col gap-2 text-left flex-1 min-w-[120px]">
+            <Label htmlFor="item-depth">Depth (inches):</Label>
+            <Input
               id="item-depth"
               type="number"
               min="1"
@@ -437,9 +439,9 @@ const RoomCanvas = ({ roomWidth, roomLength }: RoomCanvasProps) => {
               placeholder="e.g., 24"
             />
           </div>
-          <div className="control-group">
-            <label htmlFor="item-label">Label:</label>
-            <input
+          <div className="flex flex-col gap-2 text-left flex-1 min-w-[120px]">
+            <Label htmlFor="item-label">Label:</Label>
+            <Input
               id="item-label"
               type="text"
               value={newItemLabel}
@@ -447,16 +449,16 @@ const RoomCanvas = ({ roomWidth, roomLength }: RoomCanvasProps) => {
               placeholder="e.g., Desk"
             />
           </div>
-          <button onClick={handleAddItem}>Add Item</button>
+          <Button onClick={handleAddItem} className="mt-6">Add Item</Button>
         </div>
       </div>
       {selectedItemId && (
-        <div className="item-controls selected-item-controls">
-          <h3>Selected Item</h3>
-          <div className="item-form">
-            <div className="control-group">
-              <label htmlFor="rotation-angle">Rotation (degrees):</label>
-              <input
+        <div className="mb-8 p-6 border-2 border-orange-500 rounded-lg bg-orange-500/10 w-full max-w-3xl">
+          <h3 className="mt-0 mb-4 text-2xl font-semibold">Selected Item</h3>
+          <div className="flex gap-4 items-end flex-wrap">
+            <div className="flex flex-col gap-2 text-left flex-1 min-w-[120px]">
+              <Label htmlFor="rotation-angle">Rotation (degrees):</Label>
+              <Input
                 id="rotation-angle"
                 type="number"
                 min="0"
@@ -473,9 +475,9 @@ const RoomCanvas = ({ roomWidth, roomLength }: RoomCanvasProps) => {
                 }}
               />
             </div>
-            <button onClick={handleDeleteSelected} className="delete-button">
+            <Button onClick={handleDeleteSelected} variant="destructive" className="mt-6">
               Delete Item
-            </button>
+            </Button>
           </div>
         </div>
       )}
@@ -483,7 +485,7 @@ const RoomCanvas = ({ roomWidth, roomLength }: RoomCanvasProps) => {
         ref={canvasRef}
         width={CANVAS_WIDTH}
         height={CANVAS_HEIGHT}
-        className="room-canvas"
+        className="border border-input bg-card rounded cursor-default"
         onMouseDown={handleCanvasMouseDown}
         onMouseMove={handleCanvasMouseMove}
         onMouseUp={handleCanvasMouseUp}
