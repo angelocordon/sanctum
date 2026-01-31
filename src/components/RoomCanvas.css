@@ -1,0 +1,19 @@
+.room-canvas-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 2rem 0;
+}
+
+.room-canvas {
+  border: 1px solid #444;
+  background-color: #1a1a1a;
+  border-radius: 4px;
+}
+
+@media (prefers-color-scheme: light) {
+  .room-canvas {
+    background-color: #f5f5f5;
+    border: 1px solid #ccc;
+  }
+}
