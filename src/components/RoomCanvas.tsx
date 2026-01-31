@@ -1,11 +1,9 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import { Input } from './ui/input'
 import { Label } from './ui/label'
 import { Button } from './ui/button'
 
-// Canvas dimensions
-const CANVAS_WIDTH = 800
-const CANVAS_HEIGHT = 600
+// Canvas padding from viewport edges
 const CANVAS_PADDING = 40 // pixels
 
 // World bounds: 40ft × 40ft (480" × 480"), origin at center
@@ -61,6 +59,10 @@ const RoomCanvas = ({ roomWidth, roomLength }: RoomCanvasProps) => {
   
   // Room state - starts at world origin (0, 0)
   const [room, setRoom] = useState<Room>({ x: 0, y: 0 })
+  
+  // Canvas dimensions - dynamically updated on resize
+  const [canvasWidth, setCanvasWidth] = useState(0)
+  const [canvasHeight, setCanvasHeight] = useState(0)
 
   // Handle space key for panning
   useEffect(() => {
@@ -86,19 +88,59 @@ const RoomCanvas = ({ roomWidth, roomLength }: RoomCanvasProps) => {
     }
   }, [])
 
+  // Handle window resize and set up canvas dimensions
+  useEffect(() => {
+    const updateCanvasSize = () => {
+      const canvas = canvasRef.current
+      if (!canvas) return
+
+      const dpr = window.devicePixelRatio || 1
+      const width = window.innerWidth
+      const height = window.innerHeight
+
+      // Set display size (CSS pixels)
+      canvas.style.width = `${width}px`
+      canvas.style.height = `${height}px`
+
+      // Set actual size in memory (scaled for device pixel ratio)
+      canvas.width = width * dpr
+      canvas.height = height * dpr
+
+      // Update state to trigger re-render
+      setCanvasWidth(canvas.width)
+      setCanvasHeight(canvas.height)
+    }
+
+    updateCanvasSize()
+
+    window.addEventListener('resize', updateCanvasSize)
+    
+    return () => {
+      window.removeEventListener('resize', updateCanvasSize)
+    }
+  }, [])
+
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
+    if (canvasWidth === 0 || canvasHeight === 0) return
 
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
-    // Clear the canvas
-    ctx.clearRect(0, 0, canvas.width, canvas.height)
+    // Reset transform and scale the context for devicePixelRatio
+    const dpr = window.devicePixelRatio || 1
+    ctx.setTransform(1, 0, 0, 1, 0, 0)
+    ctx.scale(dpr, dpr)
+
+    // Clear the canvas (use CSS pixel dimensions for clearing)
+    const displayWidth = canvas.width / dpr
+    const displayHeight = canvas.height / dpr
+    ctx.clearRect(0, 0, displayWidth, displayHeight)
 
     // Calculate scale factor (pixels per inch) to fit the world in the canvas
-    const availableWidth = canvas.width - 2 * CANVAS_PADDING
-    const availableHeight = canvas.height - 2 * CANVAS_PADDING
+    const availableWidth = displayWidth - 2 * CANVAS_PADDING
+    const availableHeight = displayHeight - 2 * CANVAS_PADDING
 
     // Use a single scale factor for both axes to maintain proportions
     const scaleX = availableWidth / WORLD_WIDTH
@@ -113,8 +155,8 @@ const RoomCanvas = ({ roomWidth, roomLength }: RoomCanvasProps) => {
       const viewY = worldY - camera.y
       
       // Convert to canvas space (canvas center corresponds to camera position)
-      const canvasX = canvas.width / 2 + viewX * scale
-      const canvasY = canvas.height / 2 + viewY * scale
+      const canvasX = displayWidth / 2 + viewX * scale
+      const canvasY = displayHeight / 2 + viewY * scale
       
       return { x: canvasX, y: canvasY }
     }
@@ -261,14 +303,14 @@ const RoomCanvas = ({ roomWidth, roomLength }: RoomCanvasProps) => {
     ctx.fillText(
       `World: 40ft × 40ft | Camera: (${camera.x.toFixed(0)}", ${camera.y.toFixed(0)}")`,
       10,
-      CANVAS_HEIGHT - 30
+      displayHeight - 30
     )
     ctx.fillText(
       `Room: (${room.x.toFixed(0)}", ${room.y.toFixed(0)}) | ${spacePressed ? 'Space: ACTIVE' : 'Space: Hold to pan'}`,
       10,
-      CANVAS_HEIGHT - 10
+      displayHeight - 10
     )
-  }, [roomWidth, roomLength, items, selectedItemId, camera, room, isRoomSelected, spacePressed])
+  }, [roomWidth, roomLength, items, selectedItemId, camera, room, isRoomSelected, spacePressed, canvasWidth, canvasHeight])
 
   const handleAddItem = () => {
     const width = parseFloat(newItemWidth)
@@ -297,27 +339,31 @@ const RoomCanvas = ({ roomWidth, roomLength }: RoomCanvasProps) => {
   }
 
   // Helper function to get scale and coordinate transforms
-  const getCanvasTransform = () => {
+  const getCanvasTransform = useCallback(() => {
     const canvas = canvasRef.current
     if (!canvas) return null
 
-    const availableWidth = canvas.width - 2 * CANVAS_PADDING
-    const availableHeight = canvas.height - 2 * CANVAS_PADDING
+    const dpr = window.devicePixelRatio || 1
+    const displayWidth = canvas.width / dpr
+    const displayHeight = canvas.height / dpr
+
+    const availableWidth = displayWidth - 2 * CANVAS_PADDING
+    const availableHeight = displayHeight - 2 * CANVAS_PADDING
     const scaleX = availableWidth / WORLD_WIDTH
     const scaleY = availableHeight / WORLD_HEIGHT
     const scale = Math.min(scaleX, scaleY)
 
     // Helper function to convert canvas coordinates to world coordinates
     const canvasToWorld = (canvasX: number, canvasY: number) => {
-      const viewX = (canvasX - canvas.width / 2) / scale
-      const viewY = (canvasY - canvas.height / 2) / scale
+      const viewX = (canvasX - displayWidth / 2) / scale
+      const viewY = (canvasY - displayHeight / 2) / scale
       const worldX = viewX + camera.x
       const worldY = viewY + camera.y
       return { x: worldX, y: worldY }
     }
 
-    return { scale, canvasToWorld }
-  }
+    return { scale, canvasToWorld, displayWidth, displayHeight }
+  }, [camera.x, camera.y])
 
   // Helper to check if a point (in world coordinates) is inside the room
   const isPointInRoom = (worldX: number, worldY: number) => {
@@ -473,7 +519,7 @@ const RoomCanvas = ({ roomWidth, roomLength }: RoomCanvasProps) => {
     const transform = getCanvasTransform()
     if (!transform) return
 
-    const { scale, canvasToWorld } = transform
+    const { scale, canvasToWorld, displayWidth, displayHeight } = transform
     const worldPos = canvasToWorld(canvasX, canvasY)
 
     // Handle camera panning
@@ -491,8 +537,8 @@ const RoomCanvas = ({ roomWidth, roomLength }: RoomCanvasProps) => {
       
       // Clamp camera so the visible region stays within world bounds
       // Calculate how much of the world is visible in each dimension
-      const visibleWorldWidth = canvas.width / scale
-      const visibleWorldHeight = canvas.height / scale
+      const visibleWorldWidth = displayWidth / scale
+      const visibleWorldHeight = displayHeight / scale
       
       // Clamp camera position
       const maxCameraX = WORLD_WIDTH / 2 - visibleWorldWidth / 2
@@ -629,87 +675,91 @@ const RoomCanvas = ({ roomWidth, roomLength }: RoomCanvasProps) => {
   }
 
   return (
-    <div className="flex flex-col justify-center items-center my-8">
-      <div className="mb-8 p-6 border border-input rounded-lg bg-card w-full max-w-3xl">
-        <h3 className="mt-0 mb-4 text-2xl font-semibold">Add Custom Item</h3>
-        <div className="flex gap-4 items-end flex-wrap">
-          <div className="flex flex-col gap-2 text-left flex-1 min-w-[120px]">
-            <Label htmlFor="item-width">Width (inches):</Label>
-            <Input
-              id="item-width"
-              type="number"
-              min="1"
-              step="1"
-              value={newItemWidth}
-              onChange={(e) => setNewItemWidth(e.target.value)}
-              placeholder="e.g., 36"
-            />
-          </div>
-          <div className="flex flex-col gap-2 text-left flex-1 min-w-[120px]">
-            <Label htmlFor="item-depth">Depth (inches):</Label>
-            <Input
-              id="item-depth"
-              type="number"
-              min="1"
-              step="1"
-              value={newItemDepth}
-              onChange={(e) => setNewItemDepth(e.target.value)}
-              placeholder="e.g., 24"
-            />
-          </div>
-          <div className="flex flex-col gap-2 text-left flex-1 min-w-[120px]">
-            <Label htmlFor="item-label">Label:</Label>
-            <Input
-              id="item-label"
-              type="text"
-              value={newItemLabel}
-              onChange={(e) => setNewItemLabel(e.target.value)}
-              placeholder="e.g., Desk"
-            />
-          </div>
-          <Button type="button" onClick={handleAddItem} className="mt-6">Add Item</Button>
-        </div>
-      </div>
-      {selectedItemId && (
-        <div className="mb-8 p-6 border-2 border-orange-500 rounded-lg bg-orange-500/10 w-full max-w-3xl">
-          <h3 className="mt-0 mb-4 text-2xl font-semibold">Selected Item</h3>
-          <div className="flex gap-4 items-end flex-wrap">
-            <div className="flex flex-col gap-2 text-left flex-1 min-w-[120px]">
-              <Label htmlFor="rotation-angle">Rotation (degrees):</Label>
-              <Input
-                id="rotation-angle"
-                type="number"
-                min="0"
-                max="360"
-                step="1"
-                value={Math.round(
-                  items.find((item) => item.id === selectedItemId)?.rotation || 0
-                )}
-                onChange={(e) => {
-                  const value = parseFloat(e.target.value)
-                  if (!isNaN(value)) {
-                    handleRotationChange(value)
-                  }
-                }}
-              />
-            </div>
-            <Button type="button" onClick={handleDeleteSelected} variant="destructive" className="mt-6">
-              Delete Item
-            </Button>
-          </div>
-        </div>
-      )}
+    <>
+      {/* Canvas fills entire viewport */}
       <canvas
         ref={canvasRef}
-        width={CANVAS_WIDTH}
-        height={CANVAS_HEIGHT}
-        className={`border border-input bg-card rounded ${spacePressed ? 'cursor-grab' : 'cursor-default'} ${isPanning ? 'cursor-grabbing' : ''}`}
+        className={`fixed inset-0 bg-card ${isPanning ? 'cursor-grabbing' : spacePressed ? 'cursor-grab' : 'cursor-default'}`}
         onMouseDown={handleCanvasMouseDown}
         onMouseMove={handleCanvasMouseMove}
         onMouseUp={handleCanvasMouseUp}
         onMouseLeave={handleCanvasMouseUp}
       />
-    </div>
+      
+      {/* UI overlays positioned above canvas */}
+      <div className="fixed top-4 left-4 right-4 flex flex-col gap-4 pointer-events-none z-10">
+        <div className="pointer-events-auto p-6 border border-input rounded-lg bg-card shadow-lg max-w-3xl">
+          <h3 className="mt-0 mb-4 text-2xl font-semibold">Add Custom Item</h3>
+          <div className="flex gap-4 items-end flex-wrap">
+            <div className="flex flex-col gap-2 text-left flex-1 min-w-[120px]">
+              <Label htmlFor="item-width">Width (inches):</Label>
+              <Input
+                id="item-width"
+                type="number"
+                min="1"
+                step="1"
+                value={newItemWidth}
+                onChange={(e) => setNewItemWidth(e.target.value)}
+                placeholder="e.g., 36"
+              />
+            </div>
+            <div className="flex flex-col gap-2 text-left flex-1 min-w-[120px]">
+              <Label htmlFor="item-depth">Depth (inches):</Label>
+              <Input
+                id="item-depth"
+                type="number"
+                min="1"
+                step="1"
+                value={newItemDepth}
+                onChange={(e) => setNewItemDepth(e.target.value)}
+                placeholder="e.g., 24"
+              />
+            </div>
+            <div className="flex flex-col gap-2 text-left flex-1 min-w-[120px]">
+              <Label htmlFor="item-label">Label:</Label>
+              <Input
+                id="item-label"
+                type="text"
+                value={newItemLabel}
+                onChange={(e) => setNewItemLabel(e.target.value)}
+                placeholder="e.g., Desk"
+              />
+            </div>
+            <Button type="button" onClick={handleAddItem} className="mt-6">Add Item</Button>
+          </div>
+        </div>
+        
+        {selectedItemId && (
+          <div className="pointer-events-auto p-6 border-2 border-orange-500 rounded-lg bg-orange-500/10 backdrop-blur-sm shadow-lg max-w-3xl">
+            <h3 className="mt-0 mb-4 text-2xl font-semibold">Selected Item</h3>
+            <div className="flex gap-4 items-end flex-wrap">
+              <div className="flex flex-col gap-2 text-left flex-1 min-w-[120px]">
+                <Label htmlFor="rotation-angle">Rotation (degrees):</Label>
+                <Input
+                  id="rotation-angle"
+                  type="number"
+                  min="0"
+                  max="360"
+                  step="1"
+                  value={Math.round(
+                    items.find((item) => item.id === selectedItemId)?.rotation || 0
+                  )}
+                  onChange={(e) => {
+                    const value = parseFloat(e.target.value)
+                    if (!isNaN(value)) {
+                      handleRotationChange(value)
+                    }
+                  }}
+                />
+              </div>
+              <Button type="button" onClick={handleDeleteSelected} variant="destructive" className="mt-6">
+                Delete Item
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
+    </>
   )
 }
 
