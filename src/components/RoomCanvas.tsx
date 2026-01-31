@@ -6,6 +6,7 @@ import { Button } from './ui/button'
 // Canvas dimensions
 const CANVAS_WIDTH = 800
 const CANVAS_HEIGHT = 600
+const CANVAS_PADDING = 40 // pixels
 
 // World bounds: 40ft × 40ft (480" × 480"), origin at center
 const WORLD_WIDTH = 480 // inches (40 feet)
@@ -92,9 +93,8 @@ const RoomCanvas = ({ roomWidth, roomLength }: RoomCanvasProps) => {
     ctx.clearRect(0, 0, canvas.width, canvas.height)
 
     // Calculate scale factor (pixels per inch) to fit the world in the canvas
-    const padding = 40 // pixels
-    const availableWidth = canvas.width - 2 * padding
-    const availableHeight = canvas.height - 2 * padding
+    const availableWidth = canvas.width - 2 * CANVAS_PADDING
+    const availableHeight = canvas.height - 2 * CANVAS_PADDING
 
     // Use a single scale factor for both axes to maintain proportions
     const scaleX = availableWidth / WORLD_WIDTH
@@ -297,9 +297,8 @@ const RoomCanvas = ({ roomWidth, roomLength }: RoomCanvasProps) => {
     const canvas = canvasRef.current
     if (!canvas) return null
 
-    const padding = 40
-    const availableWidth = canvas.width - 2 * padding
-    const availableHeight = canvas.height - 2 * padding
+    const availableWidth = canvas.width - 2 * CANVAS_PADDING
+    const availableHeight = canvas.height - 2 * CANVAS_PADDING
     const scaleX = availableWidth / WORLD_WIDTH
     const scaleY = availableHeight / WORLD_HEIGHT
     const scale = Math.min(scaleX, scaleY)
