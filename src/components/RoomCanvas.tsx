@@ -449,7 +449,7 @@ const RoomCanvas = ({ roomWidth, roomLength }: RoomCanvasProps) => {
               placeholder="e.g., Desk"
             />
           </div>
-          <Button onClick={handleAddItem} className="mt-6">Add Item</Button>
+          <Button type="button" onClick={handleAddItem} className="mt-6">Add Item</Button>
         </div>
       </div>
       {selectedItemId && (
@@ -475,7 +475,7 @@ const RoomCanvas = ({ roomWidth, roomLength }: RoomCanvasProps) => {
                 }}
               />
             </div>
-            <Button onClick={handleDeleteSelected} variant="destructive" className="mt-6">
+            <Button type="button" onClick={handleDeleteSelected} variant="destructive" className="mt-6">
               Delete Item
             </Button>
           </div>
