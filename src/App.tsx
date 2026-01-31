@@ -20,7 +20,12 @@ function App() {
             min="1"
             max="100"
             value={roomWidth}
-            onChange={(e) => setRoomWidth(Number(e.target.value))}
+            onChange={(e) => {
+              const value = Number(e.target.value)
+              if (!isNaN(value) && value > 0) {
+                setRoomWidth(value)
+              }
+            }}
           />
         </div>
         <div className="control-group">
@@ -31,7 +36,12 @@ function App() {
             min="1"
             max="100"
             value={roomLength}
-            onChange={(e) => setRoomLength(Number(e.target.value))}
+            onChange={(e) => {
+              const value = Number(e.target.value)
+              if (!isNaN(value) && value > 0) {
+                setRoomLength(value)
+              }
+            }}
           />
         </div>
       </div>

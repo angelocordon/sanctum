@@ -1,6 +1,10 @@
 import { useEffect, useRef } from 'react'
 import './RoomCanvas.css'
 
+// Canvas dimensions
+const CANVAS_WIDTH = 800
+const CANVAS_HEIGHT = 600
+
 interface RoomCanvasProps {
   roomWidth: number // in feet
   roomLength: number // in feet
@@ -8,8 +12,6 @@ interface RoomCanvasProps {
 
 const RoomCanvas = ({ roomWidth, roomLength }: RoomCanvasProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const canvasWidth = 800
-  const canvasHeight = 600
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -96,7 +98,7 @@ const RoomCanvas = ({ roomWidth, roomLength }: RoomCanvasProps) => {
     ctx.fillText(
       `Scale: ${scale.toFixed(2)} pixels/foot`,
       10,
-      canvasHeight - 10
+      CANVAS_HEIGHT - 10
     )
   }, [roomWidth, roomLength])
 
@@ -104,8 +106,8 @@ const RoomCanvas = ({ roomWidth, roomLength }: RoomCanvasProps) => {
     <div className="room-canvas-container">
       <canvas
         ref={canvasRef}
-        width={canvasWidth}
-        height={canvasHeight}
+        width={CANVAS_WIDTH}
+        height={CANVAS_HEIGHT}
         className="room-canvas"
       />
     </div>
