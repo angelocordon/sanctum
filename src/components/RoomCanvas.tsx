@@ -6,17 +6,17 @@ const CANVAS_WIDTH = 800
 const CANVAS_HEIGHT = 600
 
 interface RoomCanvasProps {
-  roomWidth: number // in feet
-  roomLength: number // in feet
+  roomWidth: number // in inches
+  roomLength: number // in inches
 }
 
 interface Item {
   id: string
-  width: number // in feet
-  depth: number // in feet
+  width: number // in inches
+  depth: number // in inches
   label: string
-  x: number // position in feet
-  y: number // position in feet
+  x: number // position in inches
+  y: number // position in inches
   rotation: number // rotation angle in degrees
 }
 
@@ -41,7 +41,7 @@ const RoomCanvas = ({ roomWidth, roomLength }: RoomCanvasProps) => {
     // Clear the canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height)
 
-    // Calculate scale factor (pixels per foot)
+    // Calculate scale factor (pixels per inch)
     // We want to fit the room in the canvas with some padding
     const padding = 40 // pixels
     const availableWidth = canvas.width - 2 * padding
@@ -64,12 +64,15 @@ const RoomCanvas = ({ roomWidth, roomLength }: RoomCanvasProps) => {
     ctx.strokeStyle = '#444'
     ctx.lineWidth = 0.5
 
-    // Grid spacing: 1 foot in real world
-    const gridSpacing = scale // pixels per foot
+    // Grid spacing: minor lines every 2 inches, major lines every 12 inches (1 foot)
+    const pixelsPerInch = scale
 
     // Vertical grid lines
-    for (let x = 0; x <= roomWidth; x++) {
-      const px = offsetX + x * gridSpacing
+    for (let x = 0; x <= roomWidth; x += 2) {
+      const px = offsetX + x * pixelsPerInch
+      const isMajor = x % 12 === 0
+      ctx.strokeStyle = isMajor ? '#666' : '#444'
+      ctx.lineWidth = isMajor ? 1 : 0.5
       ctx.beginPath()
       ctx.moveTo(px, offsetY)
       ctx.lineTo(px, offsetY + roomLengthPx)
@@ -77,8 +80,11 @@ const RoomCanvas = ({ roomWidth, roomLength }: RoomCanvasProps) => {
     }
 
     // Horizontal grid lines
-    for (let y = 0; y <= roomLength; y++) {
-      const py = offsetY + y * gridSpacing
+    for (let y = 0; y <= roomLength; y += 2) {
+      const py = offsetY + y * pixelsPerInch
+      const isMajor = y % 12 === 0
+      ctx.strokeStyle = isMajor ? '#666' : '#444'
+      ctx.lineWidth = isMajor ? 1 : 0.5
       ctx.beginPath()
       ctx.moveTo(offsetX, py)
       ctx.lineTo(offsetX + roomWidthPx, py)
@@ -120,7 +126,7 @@ const RoomCanvas = ({ roomWidth, roomLength }: RoomCanvasProps) => {
 
       // Draw dimensions
       ctx.font = '12px system-ui, sans-serif'
-      ctx.fillText(`${item.width} × ${item.depth} ft`, 0, 10)
+      ctx.fillText(`${item.width}" × ${item.depth}"`, 0, 10)
       
       // Draw rotation handle if selected
       if (isSelected) {
@@ -141,7 +147,7 @@ const RoomCanvas = ({ roomWidth, roomLength }: RoomCanvasProps) => {
 
     // Width label (top)
     ctx.fillText(
-      `${roomWidth} ft`,
+      `${roomWidth}"`,
       offsetX + roomWidthPx / 2,
       offsetY - 10
     )
@@ -150,7 +156,7 @@ const RoomCanvas = ({ roomWidth, roomLength }: RoomCanvasProps) => {
     ctx.save()
     ctx.translate(offsetX + roomWidthPx + 20, offsetY + roomLengthPx / 2)
     ctx.rotate(-Math.PI / 2)
-    ctx.fillText(`${roomLength} ft`, 0, 0)
+    ctx.fillText(`${roomLength}"`, 0, 0)
     ctx.restore()
 
     // Display scale factor
@@ -158,7 +164,7 @@ const RoomCanvas = ({ roomWidth, roomLength }: RoomCanvasProps) => {
     ctx.fillStyle = '#888'
     ctx.font = '12px system-ui, sans-serif'
     ctx.fillText(
-      `Scale: ${scale.toFixed(2)} pixels/foot`,
+      `Scale: ${scale.toFixed(2)} pixels/inch`,
       10,
       CANVAS_HEIGHT - 10
     )
@@ -179,8 +185,8 @@ const RoomCanvas = ({ roomWidth, roomLength }: RoomCanvasProps) => {
       width,
       depth,
       label,
-      x: 1, // Start 1 foot from left
-      y: 1, // Start 1 foot from top
+      x: 12, // Start 12 inches from left
+      y: 12, // Start 12 inches from top
       rotation: 0, // Start with no rotation
     }
 
@@ -288,12 +294,12 @@ const RoomCanvas = ({ roomWidth, roomLength }: RoomCanvasProps) => {
         setSelectedItemId(item.id)
         setIsDragging(true)
         
-        // Calculate offset from item position to click position in feet
-        const clickXInFeet = (px - transform.offsetX) / transform.scale
-        const clickYInFeet = (py - transform.offsetY) / transform.scale
+        // Calculate offset from item position to click position in inches
+        const clickXInInches = (px - transform.offsetX) / transform.scale
+        const clickYInInches = (py - transform.offsetY) / transform.scale
         setDragOffset({
-          x: clickXInFeet - item.x,
-          y: clickYInFeet - item.y,
+          x: clickXInInches - item.x,
+          y: clickYInInches - item.y,
         })
         return
       }
@@ -318,9 +324,9 @@ const RoomCanvas = ({ roomWidth, roomLength }: RoomCanvasProps) => {
     if (!selectedItem) return
 
     if (isDragging) {
-      // Convert pixel position to feet
-      const newXInFeet = (px - transform.offsetX) / transform.scale - dragOffset.x
-      const newYInFeet = (py - transform.offsetY) / transform.scale - dragOffset.y
+      // Convert pixel position to inches
+      const newXInInches = (px - transform.offsetX) / transform.scale - dragOffset.x
+      const newYInInches = (py - transform.offsetY) / transform.scale - dragOffset.y
 
       // Calculate bounding box for rotated item
       const angle = (selectedItem.rotation * Math.PI) / 180
@@ -333,9 +339,9 @@ const RoomCanvas = ({ roomWidth, roomLength }: RoomCanvasProps) => {
       const halfRotatedWidth = rotatedWidth / 2
       const halfRotatedHeight = rotatedHeight / 2
 
-      // Compute the item's center in feet based on its unrotated top-left position
-      const centerX = newXInFeet + selectedItem.width / 2
-      const centerY = newYInFeet + selectedItem.depth / 2
+      // Compute the item's center in inches based on its unrotated top-left position
+      const centerX = newXInInches + selectedItem.width / 2
+      const centerY = newYInInches + selectedItem.depth / 2
 
       // Clamp the center so the rotated bounding box stays within room bounds
       const clampedCenterX = Math.max(
@@ -408,27 +414,27 @@ const RoomCanvas = ({ roomWidth, roomLength }: RoomCanvasProps) => {
         <h3>Add Custom Item</h3>
         <div className="item-form">
           <div className="control-group">
-            <label htmlFor="item-width">Width (feet):</label>
+            <label htmlFor="item-width">Width (inches):</label>
             <input
               id="item-width"
               type="number"
-              min="0.1"
-              step="0.1"
+              min="1"
+              step="1"
               value={newItemWidth}
               onChange={(e) => setNewItemWidth(e.target.value)}
-              placeholder="e.g., 3"
+              placeholder="e.g., 36"
             />
           </div>
           <div className="control-group">
-            <label htmlFor="item-depth">Depth (feet):</label>
+            <label htmlFor="item-depth">Depth (inches):</label>
             <input
               id="item-depth"
               type="number"
-              min="0.1"
-              step="0.1"
+              min="1"
+              step="1"
               value={newItemDepth}
               onChange={(e) => setNewItemDepth(e.target.value)}
-              placeholder="e.g., 2"
+              placeholder="e.g., 24"
             />
           </div>
           <div className="control-group">

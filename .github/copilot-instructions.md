@@ -62,8 +62,8 @@ Sanctum is a room layout planner web app that allows users to visually and mathe
 
 This project emphasizes mathematical precision in layout planning:
 - Use a **single scale factor** for all axes to maintain accurate proportions
-- All measurements in feet are converted to pixels using consistent scaling
-- Grid spacing represents 1 foot in real-world measurements
+- All measurements in inches are converted to pixels using consistent scaling
+- Grid spacing: minor lines every 2 inches, major lines every 12 inches (1 foot)
 - Calculate scale factors carefully to fit room dimensions in canvas with padding
 
 ## ESLint Configuration
@@ -118,7 +118,7 @@ Before committing:
 ## Project-Specific Notes
 
 ### Current Scope (MVP)
-- Room dimensions input (width × length in feet)
+- Room dimensions input (width × length in inches)
 - Proportionally accurate canvas with grid system
 - Custom item creation with dimensions and labels
 - Item manipulation (drag, rotate, delete)
@@ -129,7 +129,6 @@ Before committing:
 - Save/load functionality
 - Export layouts
 - Additional item shapes beyond rectangles
-- Measurement units beyond feet
 - Multi-room layouts
 
 When adding new features, ensure they align with the MVP scope and maintain the core principles of mathematical accuracy and ease of use.
