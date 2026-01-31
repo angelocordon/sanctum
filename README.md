@@ -44,7 +44,7 @@ Sanctum is built with modern web technologies optimized for performance and exte
 
 ### Prerequisites
 
-- Node.js v20.20.0 (the project will pin this version via `.nvmrc` and `.node-version` files in issue #7)
+- Node.js v20.20.0 (use `.nvmrc` or `.node-version` to set the correct version)
 - npm (comes with Node.js)
 
 ### Installation
@@ -110,9 +110,15 @@ The application follows a component-based architecture using React, with state m
 
 ```
 sanctum/
-├── src/              # Source code
+├── src/
+│   ├── components/   # React components
+│   ├── App.tsx       # Main App component
+│   ├── main.tsx      # Application entry point
+│   └── ...
 ├── public/           # Static assets
 ├── package.json      # Project dependencies and scripts
-├── vite.config.js    # Vite configuration
+├── vite.config.ts    # Vite configuration
+├── .nvmrc            # Node version for nvm
+├── .node-version     # Node version for asdf/nodenv
 └── README.md         # This file
 ```
