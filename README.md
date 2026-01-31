@@ -29,13 +29,6 @@ The current version focuses on core functionality:
 - **Dimension Labels**: Each item displays its dimensions for quick real-world reference
 - **Session-Only Data**: No save/load functionality yet; data persists only during the current session
 
-### Future Enhancements
-
-- Furniture presets library
-- Save and load layouts
-- Export to various formats
-- Multi-room planning
-- Collaborative features
 
 ## Tech Stack
 
@@ -43,15 +36,16 @@ Sanctum is built with modern web technologies optimized for performance and exte
 
 - **React**: Component-based UI framework for building interactive interfaces
 - **Vite**: Next-generation frontend tooling for fast development and optimized production builds
-- **pnpm**: Fast, disk space efficient package manager
-- **TypeScript** (optional): For type-safe development and better IDE support
+- **Node.js**: Runtime environment (v20.20.0)
+- **npm**: Package manager for dependency management
+- **TypeScript**: For type-safe development and better IDE support
 
 ## Getting Started
 
 ### Prerequisites
 
-- Node.js (version 16 or higher recommended)
-- pnpm package manager (install with `npm install -g pnpm`)
+- Node.js v20.20.0 (the project will pin this version via `.nvmrc` and `.node-version` files in issue #7)
+- npm (comes with Node.js)
 
 ### Installation
 
@@ -63,7 +57,7 @@ Sanctum is built with modern web technologies optimized for performance and exte
 
 2. Install dependencies:
    ```bash
-   pnpm install
+   npm ci
    ```
 
 ### Development
@@ -71,7 +65,7 @@ Sanctum is built with modern web technologies optimized for performance and exte
 Run the development server:
 
 ```bash
-pnpm dev
+npm run dev
 ```
 
 The application will be available at `http://localhost:5173` (default Vite port).
@@ -81,13 +75,13 @@ The application will be available at `http://localhost:5173` (default Vite port)
 Create an optimized production build:
 
 ```bash
-pnpm build
+npm run build
 ```
 
 Preview the production build locally:
 
 ```bash
-pnpm preview
+npm run preview
 ```
 
 ## Usage
@@ -122,44 +116,3 @@ sanctum/
 ├── vite.config.js    # Vite configuration
 └── README.md         # This file
 ```
-
-## Contributing
-
-We welcome contributions to Sanctum! Whether you're fixing bugs, adding features, or improving documentation, your help is appreciated.
-
-### How to Contribute
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-### Development Guidelines
-
-- Follow existing code style and conventions
-- Write clear, descriptive commit messages
-- Test your changes thoroughly before submitting
-- Update documentation as needed
-
-### Areas for Future Expansion
-
-- Furniture preset library with common items
-- Save/load functionality with browser storage or cloud sync
-- Export features (PDF, PNG, blueprint formats)
-- Multi-room planning capabilities
-- Real-time collaboration features
-- Mobile responsive design improvements
-- Accessibility enhancements
-
-## License
-
-This project is open source and available under the MIT License.
-
-## Support
-
-For issues, questions, or suggestions, please open an issue on GitHub.
-
----
-
-Built with ❤️ for better space planning
