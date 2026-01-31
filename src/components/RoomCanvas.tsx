@@ -679,7 +679,7 @@ const RoomCanvas = ({ roomWidth, roomLength }: RoomCanvasProps) => {
       {/* Canvas fills entire viewport */}
       <canvas
         ref={canvasRef}
-        className={`fixed inset-0 bg-card ${spacePressed ? 'cursor-grab' : 'cursor-default'} ${isPanning ? 'cursor-grabbing' : ''}`}
+        className={`fixed inset-0 bg-card ${isPanning ? 'cursor-grabbing' : spacePressed ? 'cursor-grab' : 'cursor-default'}`}
         onMouseDown={handleCanvasMouseDown}
         onMouseMove={handleCanvasMouseMove}
         onMouseUp={handleCanvasMouseUp}
