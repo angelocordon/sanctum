@@ -19,9 +19,9 @@ Sanctum is a modern web application that helps users design and visualize room l
 
 The current version focuses on core functionality:
 
-- **Room Dimensions Input**: Users provide width × length in feet
+- **Room Dimensions Input**: Users provide width × length in inches
 - **Proportionally Accurate Canvas with Grid**: Items and spacing are mathematically accurate based on real measurements; a single scale factor is used for all axes
-- **Add Custom Items**: Users can add new items by providing width × depth (in feet) and a label
+- **Add Custom Items**: Users can add new items by providing width × depth (in inches) and a label
 - **Item Manipulation**: 
   - Drag items to reposition them within the room
   - Rotate items using handles or by entering specific angles
@@ -86,7 +86,7 @@ npm run preview
 
 ## Usage
 
-1. **Set Room Dimensions**: Enter the width and length of your room in feet
+1. **Set Room Dimensions**: Enter the width and length of your room in inches
 2. **Add Items**: Create new items by specifying their dimensions (width × depth) and a descriptive label
 3. **Arrange Layout**: 
    - Drag items to move them around the room
@@ -102,7 +102,7 @@ The application follows a component-based architecture using React, with state m
 
 ### Key Concepts
 
-- **Proportional Scaling**: A single scale factor converts real-world measurements (in feet) to canvas pixels, ensuring mathematical accuracy
+- **Proportional Scaling**: A single scale factor converts real-world measurements (in inches) to canvas pixels, ensuring mathematical accuracy
 - **Grid System**: Visual grid helps with alignment and provides spatial reference
 - **Real-Time Updates**: All changes are reflected immediately on the canvas
 

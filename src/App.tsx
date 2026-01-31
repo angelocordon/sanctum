@@ -3,8 +3,8 @@ import './App.css'
 import RoomCanvas from './components/RoomCanvas'
 
 function App() {
-  const [roomWidth, setRoomWidth] = useState(12)
-  const [roomLength, setRoomLength] = useState(10)
+  const [roomWidth, setRoomWidth] = useState(144)
+  const [roomLength, setRoomLength] = useState(120)
 
   return (
     <div className="App">
@@ -13,12 +13,12 @@ function App() {
       
       <div className="room-controls">
         <div className="control-group">
-          <label htmlFor="room-width">Room Width (feet):</label>
+          <label htmlFor="room-width">Room Width (inches):</label>
           <input
             id="room-width"
             type="number"
-            min="1"
-            max="100"
+            min="12"
+            max="1200"
             value={roomWidth}
             onChange={(e) => {
               const value = Number(e.target.value)
@@ -29,12 +29,12 @@ function App() {
           />
         </div>
         <div className="control-group">
-          <label htmlFor="room-length">Room Length (feet):</label>
+          <label htmlFor="room-length">Room Length (inches):</label>
           <input
             id="room-length"
             type="number"
-            min="1"
-            max="100"
+            min="12"
+            max="1200"
             value={roomLength}
             onChange={(e) => {
               const value = Number(e.target.value)
