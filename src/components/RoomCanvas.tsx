@@ -252,10 +252,10 @@ const RoomCanvas = ({ roomWidth, roomLength }: RoomCanvasProps) => {
     const itemDepth = item.depth * scale
     const handleDistance = Math.max(itemWidth, itemDepth) / 2 + 20
 
-    // Rotate handle position
+    // Rotate handle position around the item center
     const angle = (item.rotation * Math.PI) / 180
-    const handleX = itemCenterX + 0 * Math.cos(angle) - (-handleDistance) * Math.sin(angle)
-    const handleY = itemCenterY + 0 * Math.sin(angle) + (-handleDistance) * Math.cos(angle)
+    const handleX = itemCenterX + handleDistance * Math.sin(angle)
+    const handleY = itemCenterY - handleDistance * Math.cos(angle)
 
     const dx = px - handleX
     const dy = py - handleY
@@ -329,11 +329,27 @@ const RoomCanvas = ({ roomWidth, roomLength }: RoomCanvasProps) => {
       const rotatedWidth = selectedItem.width * cos + selectedItem.depth * sin
       const rotatedHeight = selectedItem.width * sin + selectedItem.depth * cos
 
-      // Clamp to room boundaries accounting for rotation
-      const maxX = roomWidth - rotatedWidth
-      const maxY = roomLength - rotatedHeight
-      const clampedX = Math.max(0, Math.min(maxX, newXInFeet))
-      const clampedY = Math.max(0, Math.min(maxY, newYInFeet))
+      // Clamp to room boundaries accounting for rotation and center-based positioning
+      const halfRotatedWidth = rotatedWidth / 2
+      const halfRotatedHeight = rotatedHeight / 2
+
+      // Compute the item's center in feet based on its unrotated top-left position
+      const centerX = newXInFeet + selectedItem.width / 2
+      const centerY = newYInFeet + selectedItem.depth / 2
+
+      // Clamp the center so the rotated bounding box stays within room bounds
+      const clampedCenterX = Math.max(
+        halfRotatedWidth,
+        Math.min(roomWidth - halfRotatedWidth, centerX)
+      )
+      const clampedCenterY = Math.max(
+        halfRotatedHeight,
+        Math.min(roomLength - halfRotatedHeight, centerY)
+      )
+
+      // Convert clamped center back to unrotated top-left coordinates
+      const clampedX = clampedCenterX - selectedItem.width / 2
+      const clampedY = clampedCenterY - selectedItem.depth / 2
 
       setItems(
         items.map((item) =>
