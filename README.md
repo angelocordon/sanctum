@@ -43,14 +43,15 @@ Sanctum is built with modern web technologies optimized for performance and exte
 
 - **React**: Component-based UI framework for building interactive interfaces
 - **Vite**: Next-generation frontend tooling for fast development and optimized production builds
-- **JavaScript/JSX**: For application logic and component development
+- **pnpm**: Fast, disk space efficient package manager
+- **TypeScript** (optional): For type-safe development and better IDE support
 
 ## Getting Started
 
 ### Prerequisites
 
 - Node.js (version 16 or higher recommended)
-- npm or yarn package manager
+- pnpm package manager (install with `npm install -g pnpm`)
 
 ### Installation
 
@@ -62,9 +63,7 @@ Sanctum is built with modern web technologies optimized for performance and exte
 
 2. Install dependencies:
    ```bash
-   npm install
-   # or
-   yarn install
+   pnpm install
    ```
 
 ### Development
@@ -72,9 +71,7 @@ Sanctum is built with modern web technologies optimized for performance and exte
 Run the development server:
 
 ```bash
-npm run dev
-# or
-yarn dev
+pnpm dev
 ```
 
 The application will be available at `http://localhost:5173` (default Vite port).
@@ -84,17 +81,13 @@ The application will be available at `http://localhost:5173` (default Vite port)
 Create an optimized production build:
 
 ```bash
-npm run build
-# or
-yarn build
+pnpm build
 ```
 
 Preview the production build locally:
 
 ```bash
-npm run preview
-# or
-yarn preview
+pnpm preview
 ```
 
 ## Usage
