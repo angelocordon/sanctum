@@ -12,6 +12,10 @@ const CANVAS_PADDING = 40 // pixels
 const WORLD_WIDTH = 480 // inches (40 feet)
 const WORLD_HEIGHT = 480 // inches (40 feet)
 
+// Rotation handle constants
+const ROTATION_HANDLE_OFFSET = 20 // pixels
+const ROTATION_HANDLE_RADIUS = 10 // pixels
+
 interface RoomCanvasProps {
   roomWidth: number // in inches
   roomLength: number // in inches
@@ -131,9 +135,9 @@ const RoomCanvas = ({ roomWidth, roomLength }: RoomCanvasProps) => {
     ctx.strokeStyle = '#444'
     ctx.lineWidth = 0.5
 
-    // Grid spacing: minor lines every 12 inches (1 foot), major lines every 60 inches (5 feet)
-    const minorGridSpacing = 12 // inches
-    const majorGridSpacing = 60 // inches
+    // Grid spacing: minor lines every 2 inches, major lines every 12 inches (1 foot)
+    const minorGridSpacing = 2 // inches
+    const majorGridSpacing = 12 // inches
 
     // Vertical grid lines
     for (let x = -WORLD_WIDTH / 2; x <= WORLD_WIDTH / 2; x += minorGridSpacing) {
@@ -223,7 +227,7 @@ const RoomCanvas = ({ roomWidth, roomLength }: RoomCanvasProps) => {
       
       // Draw rotation handle if selected
       if (isSelected) {
-        const handleDistance = Math.max(itemWidth, itemDepth) / 2 + 20
+        const handleDistance = Math.max(itemWidth, itemDepth) / 2 + ROTATION_HANDLE_OFFSET
         ctx.fillStyle = '#ffaa00'
         ctx.beginPath()
         ctx.arc(0, -handleDistance, 6, 0, 2 * Math.PI)
@@ -377,7 +381,7 @@ const RoomCanvas = ({ roomWidth, roomLength }: RoomCanvasProps) => {
     const itemCenterY = itemWorldY + item.depth / 2
     const itemWidth = item.width
     const itemDepth = item.depth
-    const handleDistance = Math.max(itemWidth, itemDepth) / 2 + 20 / scale
+    const handleDistance = Math.max(itemWidth, itemDepth) / 2 + ROTATION_HANDLE_OFFSET / scale
 
     // Rotate handle position around the item center
     const angle = (item.rotation * Math.PI) / 180
@@ -386,7 +390,7 @@ const RoomCanvas = ({ roomWidth, roomLength }: RoomCanvasProps) => {
 
     const dx = worldX - handleX
     const dy = worldY - handleY
-    return Math.sqrt(dx * dx + dy * dy) <= 10 / scale
+    return Math.sqrt(dx * dx + dy * dy) <= ROTATION_HANDLE_RADIUS / scale
   }
 
   const handleCanvasMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
