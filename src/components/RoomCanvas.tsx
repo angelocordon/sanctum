@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import './RoomCanvas.css'
 
 // Canvas dimensions
@@ -10,8 +10,21 @@ interface RoomCanvasProps {
   roomLength: number // in feet
 }
 
+interface Item {
+  id: string
+  width: number // in feet
+  depth: number // in feet
+  label: string
+  x: number // position in feet
+  y: number // position in feet
+}
+
 const RoomCanvas = ({ roomWidth, roomLength }: RoomCanvasProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const [items, setItems] = useState<Item[]>([])
+  const [newItemWidth, setNewItemWidth] = useState('')
+  const [newItemDepth, setNewItemDepth] = useState('')
+  const [newItemLabel, setNewItemLabel] = useState('')
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -72,6 +85,36 @@ const RoomCanvas = ({ roomWidth, roomLength }: RoomCanvasProps) => {
     ctx.lineWidth = 2
     ctx.strokeRect(offsetX, offsetY, roomWidthPx, roomLengthPx)
 
+    // Draw items
+    items.forEach((item) => {
+      const itemX = offsetX + item.x * scale
+      const itemY = offsetY + item.y * scale
+      const itemWidth = item.width * scale
+      const itemDepth = item.depth * scale
+
+      // Draw item rectangle
+      ctx.fillStyle = 'rgba(100, 108, 255, 0.3)'
+      ctx.strokeStyle = '#646cff'
+      ctx.lineWidth = 2
+      ctx.fillRect(itemX, itemY, itemWidth, itemDepth)
+      ctx.strokeRect(itemX, itemY, itemWidth, itemDepth)
+
+      // Draw label
+      ctx.fillStyle = '#fff'
+      ctx.font = 'bold 14px system-ui, sans-serif'
+      ctx.textAlign = 'center'
+      ctx.textBaseline = 'middle'
+      ctx.fillText(item.label, itemX + itemWidth / 2, itemY + itemDepth / 2 - 10)
+
+      // Draw dimensions
+      ctx.font = '12px system-ui, sans-serif'
+      ctx.fillText(
+        `${item.width} × ${item.depth} ft`,
+        itemX + itemWidth / 2,
+        itemY + itemDepth / 2 + 10
+      )
+    })
+
     // Draw dimension labels
     ctx.fillStyle = '#fff'
     ctx.font = '14px system-ui, sans-serif'
@@ -100,10 +143,75 @@ const RoomCanvas = ({ roomWidth, roomLength }: RoomCanvasProps) => {
       10,
       CANVAS_HEIGHT - 10
     )
-  }, [roomWidth, roomLength])
+  }, [roomWidth, roomLength, items])
+
+  const handleAddItem = () => {
+    const width = parseFloat(newItemWidth)
+    const depth = parseFloat(newItemDepth)
+    const label = newItemLabel.trim()
+
+    if (isNaN(width) || isNaN(depth) || width <= 0 || depth <= 0 || !label) {
+      alert('Please provide valid width, depth, and label')
+      return
+    }
+
+    const newItem: Item = {
+      id: `item-${Date.now()}`,
+      width,
+      depth,
+      label,
+      x: 1, // Start 1 foot from left
+      y: 1, // Start 1 foot from top
+    }
+
+    setItems([...items, newItem])
+    setNewItemWidth('')
+    setNewItemDepth('')
+    setNewItemLabel('')
+  }
 
   return (
     <div className="room-canvas-container">
+      <div className="item-controls">
+        <h3>Add Custom Item</h3>
+        <div className="item-form">
+          <div className="control-group">
+            <label htmlFor="item-width">Width (feet):</label>
+            <input
+              id="item-width"
+              type="number"
+              min="0.1"
+              step="0.1"
+              value={newItemWidth}
+              onChange={(e) => setNewItemWidth(e.target.value)}
+              placeholder="e.g., 3"
+            />
+          </div>
+          <div className="control-group">
+            <label htmlFor="item-depth">Depth (feet):</label>
+            <input
+              id="item-depth"
+              type="number"
+              min="0.1"
+              step="0.1"
+              value={newItemDepth}
+              onChange={(e) => setNewItemDepth(e.target.value)}
+              placeholder="e.g., 2"
+            />
+          </div>
+          <div className="control-group">
+            <label htmlFor="item-label">Label:</label>
+            <input
+              id="item-label"
+              type="text"
+              value={newItemLabel}
+              onChange={(e) => setNewItemLabel(e.target.value)}
+              placeholder="e.g., Desk"
+            />
+          </div>
+          <button onClick={handleAddItem}>Add Item</button>
+        </div>
+      </div>
       <canvas
         ref={canvasRef}
         width={CANVAS_WIDTH}
