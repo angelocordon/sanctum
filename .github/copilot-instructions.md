@@ -4,6 +4,16 @@
 
 Sanctum is a room layout planner web app that allows users to visually and mathematically plan spaces with precision and ease. The app provides an intuitive interface to design room layouts with mathematically accurate proportions.
 
+## Agent Guidelines
+
+This section addresses how AI agents should interact with this project:
+
+1. **Follow the project standards** - All code changes must adhere to the Code Style and Conventions section
+2. **Validate before implementing** - Gather sufficient context before making changes; ask for clarification if requirements are ambiguous
+3. **Test and lint before suggesting commits** - Follow the Testing Changes checklist, then reference [Git Commit Guidelines](.github/COMMIT_GUIDELINES.md) when creating commits
+4. **Maintain mathematical accuracy** - Preserve the single scale factor approach and verify proportional accuracy in all layout changes
+5. **No assumptions about scope** - When adding features, confirm alignment with the Current Scope (MVP) section before implementation
+
 ## Tech Stack
 
 - **React** (v19.2.0): Component-based UI framework
@@ -108,12 +118,19 @@ Always run `npm run lint` before committing code changes.
 
 ## Testing Changes
 
-Before committing:
+Before committing, follow this workflow:
+
 1. Run `npm run lint` to check for linting errors
 2. Run `npm run build` to ensure TypeScript compilation succeeds
 3. Test the app manually with `npm run dev`
 4. Verify mathematical accuracy of layouts at different room sizes
 5. Check responsive behavior and edge cases
+
+Once all tests pass, create commits following the [Git Commit Guidelines](.github/COMMIT_GUIDELINES.md). Ensure your commit:
+- Has a clear, imperative summary (72 chars or less)
+- Explains *what* and *why*, not *how*
+- Includes a descriptive body if changes are complex
+- Follows the imperative mood guidelines
 
 ## Project-Specific Notes
 
