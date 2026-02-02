@@ -1,15 +1,27 @@
 import { useEffect, useRef, useState } from 'react'
 
-// Grid spacing constant (12 inches = 1 foot)
-const GRID_SPACING = 12 // inches
+// Grid spacing constant in inches
+const GRID_SPACING = 12;
 
 // Zoom limits
-const MIN_SCALE = 0.01 // max zoom out
-const MAX_SCALE = 10 // max zoom in
+const MIN_SCALE = 0.01;
+const MAX_SCALE = 10; 
 
+// camera position in world space (inches)
 interface Camera {
-  x: number // camera position in world space (inches)
-  y: number // camera position in world space (inches)
+	x: number;
+	y: number;
+}
+
+// Item represents a rectangle in the room layout
+interface Item {
+	id: string;
+	x: number; // position in world space (inches)
+	y: number; // position in world space (inches)
+	width: number; // width in inches
+	height: number; // height in inches
+	rotation: number; // rotation angle in degrees (0-360)
+	label?: string; // optional item label
 }
 
 const Workspace = () => {
@@ -27,6 +39,16 @@ const Workspace = () => {
 	// Canvas dimensions - dynamically updated on resize
 	const [canvasWidth, setCanvasWidth] = useState(0);
 	const [canvasHeight, setCanvasHeight] = useState(0);
+
+	// Items state
+	const [items, setItems] = useState<Item[]>([]);
+
+	// Drawing state
+	const [isDrawing, setIsDrawing] = useState(false);
+	const [drawStart, setDrawStart] = useState<{ x: number; y: number } | null>(
+		null
+	);
+	const [drawEnd, setDrawEnd] = useState<{ x: number; y: number } | null>(null);
 
 	// Handle space key for panning and keyboard shortcuts
 	useEffect(() => {
@@ -60,7 +82,9 @@ const Workspace = () => {
 		};
 	}, []);
 
-	// Handle window resize and set up canvas dimensions
+	// Keep the canvas buffer in sync with the viewport and devicePixelRatio so
+	// drawing stays crisp and coordinates remain correct (CSS size alone
+	// stretches the default 300x150 buffer and causes blur/misalignment).
 	useEffect(() => {
 		const updateCanvasSize = () => {
 			const canvas = canvasRef.current;
@@ -70,7 +94,6 @@ const Workspace = () => {
 			const width = window.innerWidth;
 			const height = window.innerHeight;
 
-			// Set display size (CSS pixels)
 			canvas.style.width = `${width}px`;
 			canvas.style.height = `${height}px`;
 
@@ -128,17 +151,6 @@ const Workspace = () => {
 			return { x: canvasX, y: canvasY };
 		};
 
-		// Helper function to convert canvas coordinates to world coordinates
-		const canvasToWorld = (canvasX: number, canvasY: number) => {
-			const viewX = (canvasX - displayWidth / 2) / scale;
-			const viewY = (canvasY - displayHeight / 2) / scale;
-
-			const worldX = viewX + camera.x;
-			const worldY = viewY + camera.y;
-
-			return { x: worldX, y: worldY };
-		};
-
 		// Calculate visible world bounds based on camera position
 		const visibleWorldWidth = displayWidth / scale;
 		const visibleWorldHeight = displayHeight / scale;
@@ -178,10 +190,83 @@ const Workspace = () => {
 			ctx.stroke();
 		}
 
+		// Draw all items
+		items.forEach((item) => {
+			const topLeft = worldToCanvas(item.x, item.y);
+			const itemWidth = item.width * scale;
+			const itemHeight = item.height * scale;
+
+			// Draw rectangle with semi-transparent fill and solid border
+			ctx.fillStyle = 'rgba(100, 150, 255, 0.3)';
+			ctx.fillRect(topLeft.x, topLeft.y, itemWidth, itemHeight);
+
+			ctx.strokeStyle = '#4a90e2';
+			ctx.lineWidth = 2;
+			ctx.strokeRect(topLeft.x, topLeft.y, itemWidth, itemHeight);
+
+			// Draw centered dimension label
+			const centerX = topLeft.x + itemWidth / 2;
+			const centerY = topLeft.y + itemHeight / 2;
+
+			const dimensionText = `${item.width.toFixed(0)}″ × ${item.height.toFixed(
+				0
+			)}″`;
+			ctx.font = 'bold 14px system-ui, sans-serif';
+			ctx.textAlign = 'center';
+			ctx.textBaseline = 'middle';
+
+			// Text with stroke for visibility
+			ctx.strokeStyle = '#000';
+			ctx.lineWidth = 3;
+			ctx.strokeText(dimensionText, centerX, centerY);
+
+			ctx.fillStyle = '#fff';
+			ctx.fillText(dimensionText, centerX, centerY);
+		});
+
+		// Draw preview rectangle while drawing
+		if (isDrawing && drawStart && drawEnd) {
+			const minX = Math.min(drawStart.x, drawEnd.x);
+			const minY = Math.min(drawStart.y, drawEnd.y);
+			const width = Math.abs(drawEnd.x - drawStart.x);
+			const height = Math.abs(drawEnd.y - drawStart.y);
+
+			const topLeft = worldToCanvas(minX, minY);
+			const previewWidth = width * scale;
+			const previewHeight = height * scale;
+
+			// Draw preview with slightly different styling
+			ctx.fillStyle = 'rgba(100, 150, 255, 0.2)';
+			ctx.fillRect(topLeft.x, topLeft.y, previewWidth, previewHeight);
+
+			ctx.strokeStyle = '#4a90e2';
+			ctx.lineWidth = 2;
+			ctx.setLineDash([5, 5]);
+			ctx.strokeRect(topLeft.x, topLeft.y, previewWidth, previewHeight);
+			ctx.setLineDash([]);
+
+			// Draw dimension label for preview
+			const centerX = topLeft.x + previewWidth / 2;
+			const centerY = topLeft.y + previewHeight / 2;
+
+			const dimensionText = `${width.toFixed(0)}″ × ${height.toFixed(0)}″`;
+			ctx.font = 'bold 14px system-ui, sans-serif';
+			ctx.textAlign = 'center';
+			ctx.textBaseline = 'middle';
+
+			ctx.strokeStyle = '#000';
+			ctx.lineWidth = 3;
+			ctx.strokeText(dimensionText, centerX, centerY);
+
+			ctx.fillStyle = '#fff';
+			ctx.fillText(dimensionText, centerX, centerY);
+		}
+
 		// Display camera info
 		ctx.fillStyle = '#888';
 		ctx.font = '12px system-ui, sans-serif';
 		ctx.textAlign = 'left';
+		ctx.textBaseline = 'alphabetic';
 		ctx.fillText(
 			`Camera: (${camera.x.toFixed(0)}", ${camera.y.toFixed(
 				0
@@ -191,10 +276,17 @@ const Workspace = () => {
 			10,
 			displayHeight - 10
 		);
-
-		// Suppress unused variable warning - canvasToWorld is defined for future use
-		void canvasToWorld;
-	}, [camera, zoom, spacePressed, canvasWidth, canvasHeight]);
+	}, [
+		camera,
+		zoom,
+		spacePressed,
+		canvasWidth,
+		canvasHeight,
+		items,
+		isDrawing,
+		drawStart,
+		drawEnd,
+	]);
 
 	const handleCanvasMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
 		// Start panning on middle-click or when space is pressed
@@ -202,31 +294,111 @@ const Workspace = () => {
 			setIsPanning(true);
 			setDragOffset({ x: e.clientX, y: e.clientY });
 			e.preventDefault();
+			return;
+		}
+
+		// Start drawing on left-click when not panning
+		if (e.button === 0 && !isPanning && !spacePressed) {
+			const canvas = canvasRef.current;
+			if (!canvas) return;
+
+			const dpr = window.devicePixelRatio || 1;
+			const displayWidth = canvas.width / dpr;
+			const displayHeight = canvas.height / dpr;
+
+			const rect = canvas.getBoundingClientRect();
+			const mouseX = e.clientX - rect.left;
+			const mouseY = e.clientY - rect.top;
+
+			// Convert to world coordinates
+			const viewX = (mouseX - displayWidth / 2) / zoom;
+			const viewY = (mouseY - displayHeight / 2) / zoom;
+			const worldX = viewX + camera.x;
+			const worldY = viewY + camera.y;
+
+			setDrawStart({ x: worldX, y: worldY });
+			setDrawEnd({ x: worldX, y: worldY });
+			setIsDrawing(true);
 		}
 	};
 
 	const handleCanvasMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
-		if (!isPanning) return;
+		// Handle panning
+		if (isPanning) {
+			// Calculate movement delta in canvas pixels
+			const deltaCanvasX = e.clientX - dragOffset.x;
+			const deltaCanvasY = e.clientY - dragOffset.y;
 
-		// Calculate movement delta in canvas pixels
-		const deltaCanvasX = e.clientX - dragOffset.x;
-		const deltaCanvasY = e.clientY - dragOffset.y;
+			// Convert canvas delta to world delta (inverted for natural panning feel)
+			const deltaWorldX = -deltaCanvasX / zoom;
+			const deltaWorldY = -deltaCanvasY / zoom;
 
-		// Convert canvas delta to world delta (inverted for natural panning feel)
-		const deltaWorldX = -deltaCanvasX / zoom;
-		const deltaWorldY = -deltaCanvasY / zoom;
+			// Update camera position (no clamping - infinite canvas)
+			setCamera({
+				x: camera.x + deltaWorldX,
+				y: camera.y + deltaWorldY,
+			});
 
-		// Update camera position (no clamping - infinite canvas)
-		setCamera({
-			x: camera.x + deltaWorldX,
-			y: camera.y + deltaWorldY,
-		});
+			setDragOffset({ x: e.clientX, y: e.clientY });
+			return;
+		}
 
-		setDragOffset({ x: e.clientX, y: e.clientY });
+		// Handle drawing preview
+		if (isDrawing) {
+			const canvas = canvasRef.current;
+			if (!canvas) return;
+
+			const dpr = window.devicePixelRatio || 1;
+			const displayWidth = canvas.width / dpr;
+			const displayHeight = canvas.height / dpr;
+
+			const rect = canvas.getBoundingClientRect();
+			const mouseX = e.clientX - rect.left;
+			const mouseY = e.clientY - rect.top;
+
+			// Convert to world coordinates
+			const viewX = (mouseX - displayWidth / 2) / zoom;
+			const viewY = (mouseY - displayHeight / 2) / zoom;
+			const worldX = viewX + camera.x;
+			const worldY = viewY + camera.y;
+
+			setDrawEnd({ x: worldX, y: worldY });
+		}
 	};
 
 	const handleCanvasMouseUp = () => {
-		setIsPanning(false);
+		// End panning
+		if (isPanning) {
+			setIsPanning(false);
+		}
+
+		// Complete rectangle drawing
+		if (isDrawing && drawStart && drawEnd) {
+			const width = Math.abs(drawEnd.x - drawStart.x);
+			const height = Math.abs(drawEnd.y - drawStart.y);
+
+			// Only create item if dimensions meet minimum size (6 inches)
+			if (width >= 6 && height >= 6) {
+				const minX = Math.min(drawStart.x, drawEnd.x);
+				const minY = Math.min(drawStart.y, drawEnd.y);
+
+				const newItem: Item = {
+					id: crypto.randomUUID(),
+					x: minX,
+					y: minY,
+					width,
+					height,
+					rotation: 0,
+				};
+
+				setItems([...items, newItem]);
+			}
+
+			// Reset drawing state
+			setIsDrawing(false);
+			setDrawStart(null);
+			setDrawEnd(null);
+		}
 	};
 
 	const handleWheel = (e: React.WheelEvent<HTMLCanvasElement>) => {
@@ -272,7 +444,7 @@ const Workspace = () => {
 					? 'cursor-grabbing'
 					: spacePressed
 					? 'cursor-grab'
-					: 'cursor-default'
+					: 'cursor-crosshair'
 			}`}
 			onMouseDown={handleCanvasMouseDown}
 			onMouseMove={handleCanvasMouseMove}
