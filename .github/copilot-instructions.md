@@ -132,6 +132,31 @@ Once all tests pass, create commits following the [Git Commit Guidelines](.githu
 - Includes a descriptive body if changes are complex
 - Follows the imperative mood guidelines
 
+## Git Commit Workflow for Agents
+
+**MANDATORY: Before any `git commit` command, agents must:**
+
+1. **Read the commit guidelines** - Always reference [.github/COMMIT_GUIDELINES.md](.github/COMMIT_GUIDELINES.md)
+2. **Validate authorship** - Set author to `Copilot <copilot@github.com>` with human as co-author
+3. **Compose message following rules:**
+   - Imperative mood (e.g., "Add feature" not "Added feature")
+   - Subject line ≤ 72 characters
+   - No file change lists (git shows that)
+   - Concise body explaining what and why
+   - Body sentences start with imperative verbs without subjects
+4. **Self-validate** - Check message against guidelines before executing commit
+
+**Example commit command:**
+```bash
+git commit --author="Copilot <copilot@github.com>" -m "Subject line
+
+Body paragraph explaining what changed and why it changed.
+
+Co-authored-by: Angelo Cordon <angelocordon@gmail.com>"
+```
+
+This ensures deterministic, guideline-compliant commits from all agent sessions.
+
 ## Project-Specific Notes
 
 ### Current Scope (MVP)
