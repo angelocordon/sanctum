@@ -8,12 +8,33 @@ When creating commits for this repository, follow these rules:
 
 1. **Do not commit an empty commit.** Do not make a commit without any changes.
 2. **Short (72 chars or less) summary in imperative mood**
-3. **Blank line separating summary from body**
-4. **Body paragraphs wrapped at 72 characters**
-5. **Write in imperative mood:** "Fix bug" not "Fixed bug" or "Fixes bug"
-6. **Avoid listing file changes** - git shows that; focus on what and why
-7. **Body sentences start with imperative verbs without subjects** (e.g., "Improves" not "This improves")
-8. **Separate paragraphs with blank lines** when needed
+3. **Keep commit messages concise** - prefer shorter, focused messages over lengthy descriptions
+4. **Blank line separating summary from body**
+5. **Body paragraphs wrapped at 72 characters**
+6. **Write in imperative mood:** "Fix bug" not "Fixed bug" or "Fixes bug"
+7. **Avoid listing file changes** - git shows that; focus on what and why
+8. **Body sentences start with imperative verbs without subjects** (e.g., "Improves" not "This improves")
+9. **Separate paragraphs with blank lines** when needed
+
+## Authorship Rules
+
+When the coding agent (GitHub Copilot) makes changes through autonomous actions:
+
+- **Author:** Set to `Copilot <copilot@github.com>`
+- **Co-author:** Add the human collaborator using the `Co-authored-by:` trailer
+
+Example:
+```
+Add click-and-drag rectangle drawing
+
+Implement interactive rectangle creation by clicking and dragging.
+Users can draw rectangles when Space is not pressed, with 6×6 inch
+minimum size, centered dimension labels, and semi-transparent styling.
+
+Co-authored-by: Human Name <human@example.com>
+```
+
+When the human makes changes directly, use standard git authorship.
 
 ## Subject Line Rule
 
@@ -32,9 +53,6 @@ Add filter by date functionality
 
 Implement --since, --today, --week, and --month flags for the log
 command to allow filtering entries by date range.
-
-Allows users to quickly view accomplishments from specific time
-periods without manually searching through all entries.
 ```
 
 ### Example 2: Refactor into internal package structure
@@ -44,13 +62,19 @@ Refactor into internal package structure
 
 Extract commands, models, and utilities from monolithic main.go
 into a clean internal package structure following Go best
-practices. Improves code organization, maintainability, and
-separation of concerns.
+practices.
+```
 
-The new structure makes it easier to test individual components,
-add new commands, and maintain clear boundaries between different
-parts of the application. Package naming uses domain-specific
-terms (entries, models, commands) for better code readability.
+### Example 3: Agent-authored commit with co-author
+
+```
+Add click-and-drag rectangle drawing
+
+Implement interactive rectangle creation by clicking and dragging.
+Users can draw rectangles when Space is not pressed, with 6×6 inch
+minimum size, centered dimension labels, and semi-transparent styling.
+
+Co-authored-by: Angelo Cordon <angelo@example.com>
 ```
 
 ## Tips
