@@ -1,7 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 
-// Grid spacing constant (60 inches = 5 feet)
-const GRID_SPACING = 60 // inches
+// Grid spacing constant (12 inches = 1 foot)
+const GRID_SPACING = 12 // inches
+
+// Zoom limits
+const MIN_SCALE = 0.01 // max zoom out
+const MAX_SCALE = 10 // max zoom in
 
 interface Camera {
   x: number // camera position in world space (inches)
@@ -16,6 +20,9 @@ const Workspace = () => {
   
   // Camera state - starts at world origin (0, 0)
   const [camera, setCamera] = useState<Camera>({ x: 0, y: 0 })
+  
+  // Zoom state - 1.0 is base scale (1 pixel per inch)
+  const [zoom, setZoom] = useState(1)
   
   // Canvas dimensions - dynamically updated on resize
   const [canvasWidth, setCanvasWidth] = useState(0)
@@ -97,9 +104,8 @@ const Workspace = () => {
     const displayHeight = canvas.height / dpr
     ctx.clearRect(0, 0, displayWidth, displayHeight)
 
-    // Use a fixed scale (pixels per inch) - start with 1 pixel per inch for now
-    // This could be adjustable in the future for zoom functionality
-    const scale = 1 // pixels per inch
+    // Scale (pixels per inch) based on zoom level
+    const scale = zoom
 
     // Helper function to convert world coordinates to canvas coordinates
     const worldToCanvas = (worldX: number, worldY: number) => {
@@ -113,6 +119,17 @@ const Workspace = () => {
       const canvasY = displayHeight / 2 + viewY * scale
       
       return { x: canvasX, y: canvasY }
+    }
+
+    // Helper function to convert canvas coordinates to world coordinates
+    const canvasToWorld = (canvasX: number, canvasY: number) => {
+      const viewX = (canvasX - displayWidth / 2) / scale
+      const viewY = (canvasY - displayHeight / 2) / scale
+      
+      const worldX = viewX + camera.x
+      const worldY = viewY + camera.y
+      
+      return { x: worldX, y: worldY }
     }
 
     // Calculate visible world bounds based on camera position
@@ -159,11 +176,14 @@ const Workspace = () => {
     ctx.font = '12px system-ui, sans-serif'
     ctx.textAlign = 'left'
     ctx.fillText(
-      `Camera: (${camera.x.toFixed(0)}", ${camera.y.toFixed(0)}")${spacePressed ? ' | Space: ACTIVE' : ' | Hold Space to pan'}`,
+      `Camera: (${camera.x.toFixed(0)}", ${camera.y.toFixed(0)}") | Zoom: ${zoom.toFixed(2)}x${spacePressed ? ' | Space: ACTIVE' : ' | Hold Space to pan'}`,
       10,
       displayHeight - 10
     )
-  }, [camera, spacePressed, canvasWidth, canvasHeight])
+    
+    // Suppress unused variable warning - canvasToWorld is defined for future use
+    void canvasToWorld
+  }, [camera, zoom, spacePressed, canvasWidth, canvasHeight])
 
   const handleCanvasMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
     // Start panning on middle-click or when space is pressed
@@ -177,15 +197,13 @@ const Workspace = () => {
   const handleCanvasMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!isPanning) return
 
-    const scale = 1 // pixels per inch
-
     // Calculate movement delta in canvas pixels
     const deltaCanvasX = e.clientX - dragOffset.x
     const deltaCanvasY = e.clientY - dragOffset.y
 
     // Convert canvas delta to world delta (inverted for natural panning feel)
-    const deltaWorldX = -deltaCanvasX / scale
-    const deltaWorldY = -deltaCanvasY / scale
+    const deltaWorldX = -deltaCanvasX / zoom
+    const deltaWorldY = -deltaCanvasY / zoom
 
     // Update camera position (no clamping - infinite canvas)
     setCamera({
@@ -200,6 +218,41 @@ const Workspace = () => {
     setIsPanning(false)
   }
 
+  const handleWheel = (e: React.WheelEvent<HTMLCanvasElement>) => {
+    e.preventDefault()
+
+    const canvas = canvasRef.current
+    if (!canvas) return
+
+    const dpr = window.devicePixelRatio || 1
+    const displayWidth = canvas.width / dpr
+    const displayHeight = canvas.height / dpr
+
+    // Mouse position in canvas coordinates
+    const rect = canvas.getBoundingClientRect()
+    const mouseX = e.clientX - rect.left
+    const mouseY = e.clientY - rect.top
+
+    // Get world point under cursor BEFORE zoom
+    const viewX = (mouseX - displayWidth / 2) / zoom
+    const viewY = (mouseY - displayHeight / 2) / zoom
+    const worldX = viewX + camera.x
+    const worldY = viewY + camera.y
+
+    // Calculate new zoom level
+    const zoomFactor = Math.exp(-e.deltaY * 0.002)
+    const newZoom = Math.max(MIN_SCALE, Math.min(MAX_SCALE, zoom * zoomFactor))
+
+    // Adjust camera so world point stays under cursor
+    const newCamera = {
+      x: worldX - (mouseX - displayWidth / 2) / newZoom,
+      y: worldY - (mouseY - displayHeight / 2) / newZoom
+    }
+
+    setZoom(newZoom)
+    setCamera(newCamera)
+  }
+
   return (
     <canvas
       ref={canvasRef}
@@ -208,6 +261,7 @@ const Workspace = () => {
       onMouseMove={handleCanvasMouseMove}
       onMouseUp={handleCanvasMouseUp}
       onMouseLeave={handleCanvasMouseUp}
+      onWheel={handleWheel}
     />
   )
 }
