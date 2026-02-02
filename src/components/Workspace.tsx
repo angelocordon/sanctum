@@ -50,6 +50,11 @@ const Workspace = () => {
 	);
 	const [drawEnd, setDrawEnd] = useState<{ x: number; y: number } | null>(null);
 
+	// Selection and dragging state
+	const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
+	const [isDraggingItem, setIsDraggingItem] = useState(false);
+	const [itemDragOffset, setItemDragOffset] = useState({ x: 0, y: 0 });
+
 	// Handle space key for panning and keyboard shortcuts
 	useEffect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {
@@ -195,13 +200,15 @@ const Workspace = () => {
 			const topLeft = worldToCanvas(item.x, item.y);
 			const itemWidth = item.width * scale;
 			const itemHeight = item.height * scale;
+			const isSelected = item.id === selectedItemId;
 
 			// Draw rectangle with semi-transparent fill and solid border
 			ctx.fillStyle = 'rgba(100, 150, 255, 0.3)';
 			ctx.fillRect(topLeft.x, topLeft.y, itemWidth, itemHeight);
 
-			ctx.strokeStyle = '#4a90e2';
-			ctx.lineWidth = 2;
+			// Highlight selected items with orange border
+			ctx.strokeStyle = isSelected ? '#ff9500' : '#4a90e2';
+			ctx.lineWidth = isSelected ? 3 : 2;
 			ctx.strokeRect(topLeft.x, topLeft.y, itemWidth, itemHeight);
 
 			// Draw centered dimension label
@@ -286,6 +293,7 @@ const Workspace = () => {
 		isDrawing,
 		drawStart,
 		drawEnd,
+		selectedItemId,
 	]);
 
 	const handleCanvasMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -297,7 +305,7 @@ const Workspace = () => {
 			return;
 		}
 
-		// Start drawing on left-click when not panning
+		// Handle left-click when not panning
 		if (e.button === 0 && !isPanning && !spacePressed) {
 			const canvas = canvasRef.current;
 			if (!canvas) return;
@@ -316,13 +324,76 @@ const Workspace = () => {
 			const worldX = viewX + camera.x;
 			const worldY = viewY + camera.y;
 
-			setDrawStart({ x: worldX, y: worldY });
-			setDrawEnd({ x: worldX, y: worldY });
-			setIsDrawing(true);
+			// Find topmost item at click position (iterate in reverse)
+			let topmostItem: Item | null = null;
+			for (let i = items.length - 1; i >= 0; i--) {
+				const item = items[i];
+				if (
+					worldX >= item.x &&
+					worldX <= item.x + item.width &&
+					worldY >= item.y &&
+					worldY <= item.y + item.height
+				) {
+					topmostItem = item;
+					break;
+				}
+			}
+
+			if (topmostItem) {
+				// Start dragging the item
+				setSelectedItemId(topmostItem.id);
+				setIsDraggingItem(true);
+				// Store offset from item origin to click point
+				setItemDragOffset({
+					x: worldX - topmostItem.x,
+					y: worldY - topmostItem.y,
+				});
+			} else {
+				// Deselect if clicking empty space
+				setSelectedItemId(null);
+				// Start drawing new rectangle
+				setDrawStart({ x: worldX, y: worldY });
+				setDrawEnd({ x: worldX, y: worldY });
+				setIsDrawing(true);
+			}
 		}
 	};
 
 	const handleCanvasMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+		// Handle item dragging
+		if (isDraggingItem && selectedItemId) {
+			const canvas = canvasRef.current;
+			if (!canvas) return;
+
+			const dpr = window.devicePixelRatio || 1;
+			const displayWidth = canvas.width / dpr;
+			const displayHeight = canvas.height / dpr;
+
+			const rect = canvas.getBoundingClientRect();
+			const mouseX = e.clientX - rect.left;
+			const mouseY = e.clientY - rect.top;
+
+			// Convert to world coordinates
+			const viewX = (mouseX - displayWidth / 2) / zoom;
+			const viewY = (mouseY - displayHeight / 2) / zoom;
+			const worldX = viewX + camera.x;
+			const worldY = viewY + camera.y;
+
+			// Update item position (accounting for drag offset)
+			setItems(
+				items.map((item) =>
+					item.id === selectedItemId
+						? {
+								...item,
+								x: worldX - itemDragOffset.x,
+								y: worldY - itemDragOffset.y,
+						  }
+						: item
+				)
+			);
+			return;
+		}
+
 		// Handle panning
 		if (isPanning) {
 			// Calculate movement delta in canvas pixels
@@ -367,6 +438,12 @@ const Workspace = () => {
 	};
 
 	const handleCanvasMouseUp = () => {
+		// End item dragging (keep selection active)
+		if (isDraggingItem) {
+			setIsDraggingItem(false);
+			return;
+		}
+
 		// End panning
 		if (isPanning) {
 			setIsPanning(false);
@@ -440,7 +517,9 @@ const Workspace = () => {
 		<canvas
 			ref={canvasRef}
 			className={`fixed inset-0 bg-card ${
-				isPanning
+				isDraggingItem
+					? 'cursor-grabbing'
+					: isPanning
 					? 'cursor-grabbing'
 					: spacePressed
 					? 'cursor-grab'
