@@ -1,7 +1,7 @@
-import RoomCanvas from './components/RoomCanvas'
+import Workspace from './components/Workspace'
 
 function App() {
-  return <RoomCanvas />
+  return <Workspace />
 }
 
 export default App
