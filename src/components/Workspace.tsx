@@ -8,7 +8,7 @@ interface Camera {
   y: number // camera position in world space (inches)
 }
 
-const RoomCanvas = () => {
+const Workspace = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [isPanning, setIsPanning] = useState(false)
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
@@ -212,4 +212,4 @@ const RoomCanvas = () => {
   )
 }
 
-export default RoomCanvas
+export default Workspace
