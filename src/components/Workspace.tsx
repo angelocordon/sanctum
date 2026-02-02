@@ -1,8 +1,17 @@
 import { useEffect, useState } from 'react';
-import type { Camera, Item, Point } from '../types/canvas';
+import type { Camera, Item, Point, ResizeHandle } from '../types/canvas';
 import { MIN_SCALE, MAX_SCALE } from '../types/canvas';
-import { canvasToWorld, findItemAtPosition } from '../utils/coordinates';
-import { drawGrid, drawItems, drawPreview } from '../utils/canvasRenderer';
+import {
+	canvasToWorld,
+	findItemAtPosition,
+	findResizeHandleAtPosition,
+} from '../utils/coordinates';
+import {
+	drawGrid,
+	drawItems,
+	drawPreview,
+	drawResizeHandles,
+} from '../utils/canvasRenderer';
 import { useCanvasSetup } from '../hooks/useCanvasSetup';
 import { useKeyboardControls } from '../hooks/useKeyboardControls';
 import CanvasInfo from './CanvasInfo';
@@ -31,6 +40,20 @@ const Workspace = () => {
 	const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
 	const [isDraggingItem, setIsDraggingItem] = useState(false);
 	const [itemDragOffset, setItemDragOffset] = useState({ x: 0, y: 0 });
+
+	// Resize state
+	const [isResizing, setIsResizing] = useState(false);
+	const [activeHandle, setActiveHandle] = useState<ResizeHandle | null>(null);
+	const [resizeStartDimensions, setResizeStartDimensions] = useState<{
+		width: number;
+		height: number;
+		x: number;
+		y: number;
+	} | null>(null);
+	const [resizeStartMouse, setResizeStartMouse] = useState<Point | null>(null);
+
+	// Hover state for cursor feedback
+	const [hoveredHandle, setHoveredHandle] = useState<ResizeHandle | null>(null);
 
 	// Keyboard controls
 	const { spacePressed } = useKeyboardControls({
@@ -64,13 +87,54 @@ const Workspace = () => {
 		drawGrid(ctx, camera, zoom, displayWidth, displayHeight);
 
 		// Draw all items
-		drawItems(ctx, items, selectedItemId, camera, zoom, displayWidth, displayHeight);
+		drawItems(
+			ctx,
+			items,
+			selectedItemId,
+			camera,
+			zoom,
+			displayWidth,
+			displayHeight
+		);
+
+		// Draw resize handles for selected item
+		if (selectedItemId) {
+			const selectedItem = items.find((item) => item.id === selectedItemId);
+			if (selectedItem) {
+				drawResizeHandles(
+					ctx,
+					selectedItem,
+					camera,
+					zoom,
+					displayWidth,
+					displayHeight
+				);
+			}
+		}
 
 		// Draw preview rectangle while drawing
 		if (isDrawing && drawStart && drawEnd) {
-			drawPreview(ctx, drawStart, drawEnd, camera, zoom, displayWidth, displayHeight);
+			drawPreview(
+				ctx,
+				drawStart,
+				drawEnd,
+				camera,
+				zoom,
+				displayWidth,
+				displayHeight
+			);
 		}
-	}, [camera, zoom, canvasWidth, canvasHeight, items, isDrawing, drawStart, drawEnd, selectedItemId]);
+	}, [
+		camera,
+		zoom,
+		canvasWidth,
+		canvasHeight,
+		items,
+		isDrawing,
+		drawStart,
+		drawEnd,
+		selectedItemId,
+	]);
 
 	const handleCanvasMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
 		// Start panning on middle-click or when space is pressed
@@ -103,6 +167,37 @@ const Workspace = () => {
 				displayWidth,
 				displayHeight
 			);
+
+			// Check if clicking on a resize handle of the selected item FIRST
+			// This must happen before findItemAtPosition to prevent edge case issues
+			if (selectedItemId) {
+				const selectedItem = items.find((item) => item.id === selectedItemId);
+				if (selectedItem) {
+					const handle = findResizeHandleAtPosition(
+						mouseX,
+						mouseY,
+						selectedItem,
+						camera,
+						zoom,
+						displayWidth,
+						displayHeight
+					);
+
+					if (handle) {
+						// Start resizing
+						setIsResizing(true);
+						setActiveHandle(handle);
+						setResizeStartDimensions({
+							width: selectedItem.width,
+							height: selectedItem.height,
+							x: selectedItem.x,
+							y: selectedItem.y,
+						});
+						setResizeStartMouse(worldPos);
+						return;
+					}
+				}
+			}
 
 			// Find topmost item at click position
 			const topmostItem = findItemAtPosition(worldPos.x, worldPos.y, items);
@@ -148,6 +243,106 @@ const Workspace = () => {
 			displayHeight
 		);
 
+		// Handle resizing
+		if (
+			isResizing &&
+			selectedItemId &&
+			activeHandle &&
+			resizeStartDimensions &&
+			resizeStartMouse
+		) {
+			const MIN_SIZE = 6; // Minimum size in inches
+			const deltaX = worldPos.x - resizeStartMouse.x;
+			const deltaY = worldPos.y - resizeStartMouse.y;
+
+			setItems(
+				items.map((item) => {
+					if (item.id !== selectedItemId) return item;
+
+					let newWidth = resizeStartDimensions.width;
+					let newHeight = resizeStartDimensions.height;
+					let newX = resizeStartDimensions.x;
+					let newY = resizeStartDimensions.y;
+
+					// Calculate new dimensions based on which handle is being dragged
+					switch (activeHandle) {
+						case 'nw':
+							// Northwest: adjust x, y, width, height
+							newWidth = resizeStartDimensions.width - deltaX;
+							newHeight = resizeStartDimensions.height - deltaY;
+							if (newWidth >= MIN_SIZE) {
+								newX = resizeStartDimensions.x + deltaX;
+							} else {
+								newWidth = MIN_SIZE;
+								newX =
+									resizeStartDimensions.x +
+									resizeStartDimensions.width -
+									MIN_SIZE;
+							}
+							if (newHeight >= MIN_SIZE) {
+								newY = resizeStartDimensions.y + deltaY;
+							} else {
+								newHeight = MIN_SIZE;
+								newY =
+									resizeStartDimensions.y +
+									resizeStartDimensions.height -
+									MIN_SIZE;
+							}
+							break;
+
+						case 'ne':
+							// Northeast: adjust y, width, height
+							newWidth = resizeStartDimensions.width + deltaX;
+							newHeight = resizeStartDimensions.height - deltaY;
+							newWidth = Math.max(MIN_SIZE, newWidth);
+							if (newHeight >= MIN_SIZE) {
+								newY = resizeStartDimensions.y + deltaY;
+							} else {
+								newHeight = MIN_SIZE;
+								newY =
+									resizeStartDimensions.y +
+									resizeStartDimensions.height -
+									MIN_SIZE;
+							}
+							break;
+
+						case 'sw':
+							// Southwest: adjust x, width, height
+							newWidth = resizeStartDimensions.width - deltaX;
+							newHeight = resizeStartDimensions.height + deltaY;
+							if (newWidth >= MIN_SIZE) {
+								newX = resizeStartDimensions.x + deltaX;
+							} else {
+								newWidth = MIN_SIZE;
+								newX =
+									resizeStartDimensions.x +
+									resizeStartDimensions.width -
+									MIN_SIZE;
+							}
+							newHeight = Math.max(MIN_SIZE, newHeight);
+							break;
+
+						case 'se':
+							// Southeast: adjust width, height
+							newWidth = resizeStartDimensions.width + deltaX;
+							newHeight = resizeStartDimensions.height + deltaY;
+							newWidth = Math.max(MIN_SIZE, newWidth);
+							newHeight = Math.max(MIN_SIZE, newHeight);
+							break;
+					}
+
+					return {
+						...item,
+						x: newX,
+						y: newY,
+						width: newWidth,
+						height: newHeight,
+					};
+				})
+			);
+			return;
+		}
+
 		// Handle item dragging
 		if (isDraggingItem && selectedItemId) {
 			setItems(
@@ -184,10 +379,41 @@ const Workspace = () => {
 		// Handle drawing preview
 		if (isDrawing) {
 			setDrawEnd(worldPos);
+			return;
+		}
+
+		// Update hovered handle for cursor feedback (when not performing other actions)
+		if (!isResizing && !isDraggingItem && !isPanning && selectedItemId) {
+			const selectedItem = items.find((item) => item.id === selectedItemId);
+			if (selectedItem) {
+				const handle = findResizeHandleAtPosition(
+					mouseX,
+					mouseY,
+					selectedItem,
+					camera,
+					zoom,
+					displayWidth,
+					displayHeight
+				);
+				setHoveredHandle(handle);
+			} else {
+				setHoveredHandle(null);
+			}
+		} else {
+			setHoveredHandle(null);
 		}
 	};
 
 	const handleCanvasMouseUp = () => {
+		// End resizing (keep selection active)
+		if (isResizing) {
+			setIsResizing(false);
+			setActiveHandle(null);
+			setResizeStartDimensions(null);
+			setResizeStartMouse(null);
+			return;
+		}
+
 		// End item dragging (keep selection active)
 		if (isDraggingItem) {
 			setIsDraggingItem(false);
@@ -263,19 +489,29 @@ const Workspace = () => {
 		setCamera(newCamera);
 	};
 
+	// Get cursor style based on current state
+	const getCursorStyle = (): string => {
+		if (isResizing) return 'cursor-grabbing';
+		if (isDraggingItem) return 'cursor-grabbing';
+		if (isPanning) return 'cursor-grabbing';
+		if (spacePressed) return 'cursor-grab';
+
+		// Show resize cursors when hovering over handles
+		if (hoveredHandle) {
+			if (hoveredHandle === 'nw' || hoveredHandle === 'se')
+				return 'cursor-nwse-resize';
+			if (hoveredHandle === 'ne' || hoveredHandle === 'sw')
+				return 'cursor-nesw-resize';
+		}
+
+		return 'cursor-crosshair';
+	};
+
 	return (
 		<>
 			<canvas
 				ref={canvasRef}
-				className={`fixed inset-0 bg-card ${
-					isDraggingItem
-						? 'cursor-grabbing'
-						: isPanning
-						? 'cursor-grabbing'
-						: spacePressed
-						? 'cursor-grab'
-						: 'cursor-crosshair'
-				}`}
+				className={`fixed inset-0 bg-card ${getCursorStyle()}`}
 				onMouseDown={handleCanvasMouseDown}
 				onMouseMove={handleCanvasMouseMove}
 				onMouseUp={handleCanvasMouseUp}
