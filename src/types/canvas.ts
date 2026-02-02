@@ -27,3 +27,6 @@ export interface Point {
 	x: number;
 	y: number;
 }
+
+// Resize handle types (4 corners)
+export type ResizeHandle = 'nw' | 'ne' | 'sw' | 'se';

@@ -32,8 +32,22 @@ export const drawGrid = (
 
 	// Vertical grid lines
 	for (let x = startX; x <= endX; x += GRID_SPACING) {
-		const start = worldToCanvas(x, visibleMinY, camera, zoom, displayWidth, displayHeight);
-		const end = worldToCanvas(x, visibleMaxY, camera, zoom, displayWidth, displayHeight);
+		const start = worldToCanvas(
+			x,
+			visibleMinY,
+			camera,
+			zoom,
+			displayWidth,
+			displayHeight
+		);
+		const end = worldToCanvas(
+			x,
+			visibleMaxY,
+			camera,
+			zoom,
+			displayWidth,
+			displayHeight
+		);
 		ctx.beginPath();
 		ctx.moveTo(start.x, start.y);
 		ctx.lineTo(end.x, end.y);
@@ -42,8 +56,22 @@ export const drawGrid = (
 
 	// Horizontal grid lines
 	for (let y = startY; y <= endY; y += GRID_SPACING) {
-		const start = worldToCanvas(visibleMinX, y, camera, zoom, displayWidth, displayHeight);
-		const end = worldToCanvas(visibleMaxX, y, camera, zoom, displayWidth, displayHeight);
+		const start = worldToCanvas(
+			visibleMinX,
+			y,
+			camera,
+			zoom,
+			displayWidth,
+			displayHeight
+		);
+		const end = worldToCanvas(
+			visibleMaxX,
+			y,
+			camera,
+			zoom,
+			displayWidth,
+			displayHeight
+		);
 		ctx.beginPath();
 		ctx.moveTo(start.x, start.y);
 		ctx.lineTo(end.x, end.y);
@@ -86,7 +114,14 @@ export const drawItems = (
 	displayHeight: number
 ): void => {
 	items.forEach((item) => {
-		const topLeft = worldToCanvas(item.x, item.y, camera, zoom, displayWidth, displayHeight);
+		const topLeft = worldToCanvas(
+			item.x,
+			item.y,
+			camera,
+			zoom,
+			displayWidth,
+			displayHeight
+		);
 		const itemWidth = item.width * zoom;
 		const itemHeight = item.height * zoom;
 		const isSelected = item.id === selectedItemId;
@@ -103,7 +138,9 @@ export const drawItems = (
 		// Draw centered dimension label
 		const centerX = topLeft.x + itemWidth / 2;
 		const centerY = topLeft.y + itemHeight / 2;
-		const dimensionText = `${item.width.toFixed(0)}″ × ${item.height.toFixed(0)}″`;
+		const dimensionText = `${item.width.toFixed(0)}″ × ${item.height.toFixed(
+			0
+		)}″`;
 		drawDimensionLabel(ctx, dimensionText, centerX, centerY);
 	});
 };
@@ -125,7 +162,14 @@ export const drawPreview = (
 	const width = Math.abs(end.x - start.x);
 	const height = Math.abs(end.y - start.y);
 
-	const topLeft = worldToCanvas(minX, minY, camera, zoom, displayWidth, displayHeight);
+	const topLeft = worldToCanvas(
+		minX,
+		minY,
+		camera,
+		zoom,
+		displayWidth,
+		displayHeight
+	);
 	const previewWidth = width * zoom;
 	const previewHeight = height * zoom;
 
@@ -144,4 +188,52 @@ export const drawPreview = (
 	const centerY = topLeft.y + previewHeight / 2;
 	const dimensionText = `${width.toFixed(0)}″ × ${height.toFixed(0)}″`;
 	drawDimensionLabel(ctx, dimensionText, centerX, centerY);
+};
+
+/**
+ * Draw resize handles at the 4 corners of a selected item
+ */
+export const drawResizeHandles = (
+	ctx: CanvasRenderingContext2D,
+	item: Item,
+	camera: Camera,
+	zoom: number,
+	displayWidth: number,
+	displayHeight: number
+): void => {
+	const HANDLE_RADIUS = 8; // Handle size in pixels
+
+	// Calculate item corners in canvas coordinates
+	const topLeft = worldToCanvas(
+		item.x,
+		item.y,
+		camera,
+		zoom,
+		displayWidth,
+		displayHeight
+	);
+	const itemWidth = item.width * zoom;
+	const itemHeight = item.height * zoom;
+
+	// Define the 4 corner positions
+	const handles: Array<{ x: number; y: number }> = [
+		{ x: topLeft.x, y: topLeft.y }, // NW
+		{ x: topLeft.x + itemWidth, y: topLeft.y }, // NE
+		{ x: topLeft.x, y: topLeft.y + itemHeight }, // SW
+		{ x: topLeft.x + itemWidth, y: topLeft.y + itemHeight }, // SE
+	];
+
+	// Draw each handle
+	handles.forEach((handle) => {
+		// Draw filled circle
+		ctx.fillStyle = '#ff9500';
+		ctx.beginPath();
+		ctx.arc(handle.x, handle.y, HANDLE_RADIUS, 0, Math.PI * 2);
+		ctx.fill();
+
+		// Draw border
+		ctx.strokeStyle = '#fff';
+		ctx.lineWidth = 2;
+		ctx.stroke();
+	});
 };
